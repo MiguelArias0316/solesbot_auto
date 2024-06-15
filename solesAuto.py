@@ -1,8 +1,8 @@
-
 from selenium.common.exceptions import ElementClickInterceptedException, NoSuchElementException, TimeoutException, WebDriverException
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from email.message import EmailMessage
 from selenium import webdriver
@@ -63,6 +63,9 @@ usernametxt = None  # Variable para almacenar el nombre de usuario
 passwordtxt = None  # Variable para almacenar la contraseña
 chromedriverurl = None  # Variable para almacenar la URL del ChromeDriver
 cuentaprocesada = None  # Variable para almacenar la cuenta procesada
+nombreMoneda1=None # Variable almacenar la moneda 1
+nombreMoneda2=None # Variable almacenar la moneda 2
+nombreMoneda3=None # Variable almacenar la moneda 3
 lista_monedas_principal = []  # Lista principal de monedas
 lista_monedas_ronda1 = []  # Lista de monedas para la ronda 1
 lista_monedas_ronda2 = []  # Lista de monedas para la ronda 2
@@ -109,6 +112,11 @@ try:
     lista_monedas_ronda1 = [Moneda(*moneda) for moneda in lista_monedas_ronda1]
     lista_monedas_ronda2 = [Moneda(*moneda) for moneda in lista_monedas_ronda2]
     lista_monedas_ronda3 = [Moneda(*moneda) for moneda in lista_monedas_ronda3]
+    nombreMoneda1=lista_monedas_principal[0].NombreMoneda
+    nombreMoneda2=lista_monedas_principal[1].NombreMoneda
+    nombreMoneda3=lista_monedas_principal[2].NombreMoneda
+
+
 except Exception as e:
     logging.error("Error convirtiendo listas en instancias de Moneda: %s", e)
 
@@ -152,9 +160,10 @@ def ask_yes_no():
 
 # Inicializar WebDriver
 try:
-    driver_path = chromedriverurl
+    driver_path = "chromedriver.exe"
     options = webdriver.ChromeOptions()
     options.add_argument("--start-maximized")
+    options.add_argument('--ignore-certificate-errors')
     service = Service(executable_path=driver_path)
     driver = webdriver.Chrome(service=service, options=options)
 except Exception as e:
@@ -200,6 +209,7 @@ except (NoSuchElementException, WebDriverException) as e:
 def get_available_balance(driver):
     try:
         available_element = driver.find_element(By.XPATH, '//div[contains(@class, "pnl__single__box")][p[contains(text(), "Available")]]/h4[contains(@class, "notranslate ng-binding")]')
+        driver.execute_script("arguments[0].scrollIntoView();", available_element)
         currency = available_element.find_element(By.XPATH, './/span[contains(@class, "notranslate")]').text
         balance_text = available_element.get_attribute('innerText').replace(currency, '').strip()
         available_number = float(balance_text.replace(',', ''))
@@ -259,7 +269,7 @@ def check_roi_by_coin(lista_operar, moneda_principal, listaActual):
                 opcion_encontrada = None
                 # Si la moneda no ha sido operada aún
                 if moneda2.Estado != True:
-                    wait = WebDriverWait(driver, 10)
+                    wait = WebDriverWait(driver, 20)
                     select_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'select[ng-model="coin"]')))
                     dropdown = Select(select_element)
                     
@@ -298,20 +308,14 @@ def check_roi_by_coin(lista_operar, moneda_principal, listaActual):
 
                     # Obtener el ROI de la moneda
                     roi_moneda = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[ng-model="suggestion.profit"]')))
+                    driver.execute_script("arguments[0].scrollIntoView();", roi_moneda)
                     roi_moneda_texto = roi_moneda.get_attribute('value')
                     roi_float = float(roi_moneda_texto)
 
                     # Comparar el ROI obtenido con el ROI deseado
                     if roi_float >= moneda2.ROI:
-                        # Click en el botón Execute
-                        execute_button = driver.find_element(By.CSS_SELECTOR, '.withdraw__con__btn button')
-                        execute_button.click()
-
-                        # Ingresar el monto
-                        amount_input = driver.find_element(By.CSS_SELECTOR, 'input[ng-model="amount"]')
-                        amount_input.clear()
+                     
                         valorAEchar = 0.0
-
                         # Determinar el valor a operar
                         ultimo_dato = lista_operar[-1]
                         suma_montos = 0
@@ -331,10 +335,20 @@ def check_roi_by_coin(lista_operar, moneda_principal, listaActual):
 
                         # Convertir el valor a string y setearlo al campo de monto
                         valorAEchar_str = f"{valorAEchar:,.2f}"
+                         # Click en el botón Execute
+                        execute_button = driver.find_element(By.CSS_SELECTOR, '.withdraw__con__btn button')
+                        execute_button.click()
+
+                         # Ingresar el monto
+                        amount_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[ng-model="amount"]')))
+                        driver.execute_script("arguments[0].scrollIntoView();", amount_input)
+
+                        time.sleep(1)
                         amount_input.send_keys(valorAEchar_str)
 
                         # Confirmar operación
-                        confirm_button = driver.find_element(By.CSS_SELECTOR, '.confirm__btn a')
+                        confirm_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '.confirm__btn a')))
+                        driver.execute_script("arguments[0].scrollIntoView();", confirm_button)           
                         confirm_button.click()
 
                         hora_actual = datetime.now()
@@ -394,15 +408,15 @@ while True:
             print(f'Opción {moneda_operar.NombreMoneda} encontrada como principal')
             
             # Verificar el ROI según la moneda principal y lista correspondiente
-            if moneda_operar.NombreMoneda == "CAKE/USDT":
+            if moneda_operar.NombreMoneda == nombreMoneda1:
                 check_roi_by_coin(lista_monedas_ronda1, moneda_operar, 1)
-            elif moneda_operar.NombreMoneda == "Lido/USDT":
+            elif moneda_operar.NombreMoneda == nombreMoneda2:
                 check_roi_by_coin(lista_monedas_ronda2, moneda_operar, 2)
-            elif moneda_operar.NombreMoneda == "Cosmos/USDT":
+            elif moneda_operar.NombreMoneda == nombreMoneda3:
                 check_roi_by_coin(lista_monedas_ronda3, moneda_operar, 3)
 
             # Reiniciar el estado de las monedas principales si es Cosmos/USDT
-            if moneda_operar.NombreMoneda == "Cosmos/USDT":
+            if moneda_operar.NombreMoneda == nombreMoneda3:
                 for moneditas in lista_monedas_principal:
                     moneditas.Estado = False
         else:
@@ -423,6 +437,11 @@ while True:
                 # Enviar correos
                 mensaje = f"Total {hours}h {minutes}m para ejecutar siguiente ronda"
                 enviar_correo_a_destinatarios(remitente, contraseña, correodestinatario, asunto, mensaje)
+                if(total_seconds - 420)> 0:
+                    total_seconds=total_seconds-420
+                else:
+                    total_seconds=total_seconds + 1 
+
                 time.sleep(total_seconds)
             except (NoSuchElementException, TimeoutException, ValueError) as e:
                 logging.error("Error en la verificación del tiempo: %s", e)

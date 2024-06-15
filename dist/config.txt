@@ -1,9 +1,9 @@
 chromedriverurl=C:\Users\Arias\Downloads\chromedriver-win64\chromedriver.exe
 cuentaprocesada=Cuenta1
 correodestinatario=["ariasmiguel0316@gmail.com","dav8003@gmail.com"]
-username=dav8003@gmail.com
-password=DiegoAle1234*
-lista_monedas_principal=[("CAKE/USDT", 30, 1.80, True),("Lido/USDT", 300, 0.65, False),("Cosmos/USDT", 1000, 0.81, False)]
+username=ariasmiguel0316@gmail.com
+password=MiguelAri1234*
+lista_monedas_principal=[("CAKE/USDT", 30, 1.80, False),("Lido/USDT", 300, 0.65, False),("Cosmos/USDT", 1000, 0.81, False)]
 lista_monedas_ronda1=[("CAKE/USDT", 30, 1.80, False),("Polkadot/USDT", 500, 0.91, False),("Avalanche/USDT", 500, 0.86, False),("Arbitrum/USDT", 300, 0.86, False)]
 lista_monedas_ronda2=[("Fantom/USDT", 100, 1.60, False),("Polkadot/USDT", 500, 0.91, False),("Chainlink/USDT", 500, 0.91, False),("Lido/USDT", 300, 0.65, False)]
 lista_monedas_ronda3=[("Polkadot/USDT", 500, 0.91, False),("Cosmos/USDT", 1000, 0.81, False)]
